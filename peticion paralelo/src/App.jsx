@@ -1,5 +1,5 @@
 import './App.css'
-import Paralelo from './components/paralelo'
+import Paralelo from './components/Paralelo'
 
 function App() {
 

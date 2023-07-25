@@ -1,44 +1,89 @@
-import { useEffect, useState } from 'react'
-import {getEpisode, getCharacter} from './util'
+import {  useState, useEffect } from 'react'
 
+const url = 'https://rickandmortyapi.com/api/episode'
 
+async function getAllEpisodes() {
+    const response = await fetch(`${url}`)
+    const data = await response.json();
+    return data.results
+ }
+ 
+ async function getCharacterInfo(url) {
+     const response = await fetch(`${url}`)
+     const data = await response.json();
+     return data
+ 
+ }
 
-const Paralelo = () => {
+async function getData() {
+    const episodes = await getAllEpisodes()
 
-    const [episodes, setEpisodes] = useState([])
-    const [characters, setCharacteres] = useState([])
+    const characters = episodes.reduce((acc, item) => {
+       return [...acc, ...item.characters.slice(0,10)]
+    
+}, [])
 
-    useEffect(()  => {
+const characterPromise = characters.map((url) => {
+    return getCharacterInfo(url);
 
-    const fetchAll = async () =>{
-        const episodesPromise = getEpisode()
-        const charactersPromise = getCharacter()
+})
 
-        const [episodesData, charactersData] = await Promise.all([episodesPromise, charactersPromise])
-        
-        setEpisodes(episodesData)
-        setCharacteres(charactersData)
-    }
-    fetchAll()}, [])
+const result = await Promise.all(characterPromise)
 
+const data = episodes.map ((episode) => {
+  return {
+    id: episode.episode,
+    title: `${episode.name} - ${episode.episode}`,
+    dateToAir: episode.air_date,
+    characters: episode.characters.slice(0, 10).map((url) => {
+        return result.find((item) => item.url === url)
+    })
+}
+})
 
-    return (
-        <>
-        <ul>
-           {episodes.map(episode => (
-             <li key={episode.id}>
-                <h2>{episode.name}</h2>
-                <p>{episode.airdate}</p>
-                <p>{episode.episode}</p>
-            <ul> 
-                {episode.characters.map(character => 
-                    (<li key={character.id}>{character}</li>))}
-            </ul>    
-             </li>
-            ))}
-        </ul>
-        </>
-    )
+return data;
 }
 
-export default Paralelo;
+const Paralelo = () => {
+    const [data, setData] = useState([])
+  
+    useEffect(() => {
+      getData().then((data) => {
+        setData(data)
+      })
+    }, []);
+  
+    return(
+      <div>
+        <h1>Rick and Morty</h1>
+        <br />
+        <ul>
+          {
+            data.map((item) => (
+              <li key={item.id}>
+                <p><strong>Title:</strong> {item.title}</p>
+                <p><strong>Date to Air:</strong> {item.dateToAir}</p>
+                <p>
+                  <strong>Characters:</strong>
+                  <ol>
+                    {
+                      item.characters.map((character) => (
+                        <li key={character.id}>
+                          <p><strong>Name: </strong> {character.name} 
+                          <strong>   Specie: </strong> {character.species}
+                          </p>
+                          
+                        </li>
+                      ))
+                    }
+                  </ol>
+                </p>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    )
+  }
+  
+  export default Paralelo;
